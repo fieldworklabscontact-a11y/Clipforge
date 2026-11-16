@@ -29,3 +29,15 @@ Unspecified choices default to the statistical median of training data, which is
 ## The one rule
 
 No single item matters alone. The AI look is the co-occurrence of many defaults with no deliberate choice anywhere. Ship a design where the important decisions were made on purpose.
+
+## Poster layer (from the three orange/ink references supplied 2026-11-16)
+
+- The signal field is the page and the ink is the type: `#ff4a12` background, `#0d0e0f` text. This deliberately inverts the earlier pass, which used orange only as an accent on ink.
+- Type roles: Anton = wordmark; Archivo Black = display headlines; Archivo = body and labels; IBM Plex Mono = timecodes only.
+- Display headlines are uppercase, tracking -0.05em, and each line sits above a 1px ink rule; the block runs the full 1216px rail.
+- Meta is parenthetical, not chipped: `(AVAILABLE NOW)`, `©2026`. No eyebrow pills, no numbered section rubrics, no arrows on every CTA.
+- Rules carry the structure: 1.5-2px ink hairlines, index rows and ruled tables. No cards, no soft shadows; the one offset block is behind the tilted hero frame.
+- Exactly one tilted element (hero frame, -2.2deg). Nothing else rotates.
+- Grain is SVG turbulence at 32% multiply, painted behind the type, on the hero, statement, closing and footer only.
+- Slab rhythm: orange -> ink (live demo) -> orange -> ink (templates) -> orange (closing) -> ink footer with the oversized wordmark and year.
+- The workspace never inherits these tokens: the poster surface is scoped to `.poster-surface[data-surface=poster]`, so `/app`, `/studio` and the editor keep their neutral themes.
