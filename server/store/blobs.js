@@ -53,7 +53,7 @@ export function createBlobStore(blobs) {
     async listProjects(userId) {
       const { blobs: entries = [] } = await blobs.list({ prefix: `projects/${userId}/` });
       const projects = await Promise.all(entries.map(entry => read(entry.key)));
-      return projects.filter(Boolean).sort((a, b) => b.updated.localeCompare(a.updated));
+      return projects.filter(Boolean).map(({ id, name, data, updated }) => ({ id, name, data, updated })).sort((a, b) => b.updated.localeCompare(a.updated));
     },
     async createProject(project) {
       await blobs.setJSON(key.project(project.userId, project.id), project);
