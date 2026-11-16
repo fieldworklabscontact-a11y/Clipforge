@@ -427,3 +427,14 @@ a{color:inherit}
  .poster-surface .band p{font-size:15px}
 }
 .poster-surface .brand-dot{color:#e5450e}
+/* Orange stays a mark: buttons and rules, not full-bleed fields. */
+.poster-surface .button-primary{background:var(--signal);color:var(--ink)}
+.poster-surface .button-primary:hover:not(:disabled){background:var(--ink);color:var(--paper)}
+.poster-surface .band.closing{background:var(--paper);border-top:2px solid var(--signal)}
+.poster-surface .closing h2{color:var(--ink)}
+.poster-surface .final-cta{background:var(--paper);border-top:2px solid var(--signal)}
+.poster-surface .final-cta h2{color:var(--ink)}
+.poster-surface .final-cta .button-primary{background:var(--signal);color:var(--ink)}
+.poster-surface .final-cta .button-primary:hover:not(:disabled){background:var(--ink);color:var(--paper)}
+.poster-surface .closing .button-primary{background:var(--signal);color:var(--ink)}
+.poster-surface .closing .button-primary:hover:not(:disabled){background:var(--ink);color:var(--paper)}
