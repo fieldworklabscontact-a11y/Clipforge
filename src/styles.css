@@ -248,14 +248,12 @@ a{color:inherit}
 .public-header .header-actions .button:hover{background:var(--white);color:#120d0a}
 
 
+
 /* ---------------------------------------------------------------------------
-   Poster layer, three colours only: paper, ink, signal orange as the accent.
-   Public marketing pages are scoped here; the workspace keeps its neutral tokens.
+   Poster layer: paper, ink, signal orange. Marketing surface only.
+   Scope: .poster-surface. The workspace keeps its own tokens.
 --------------------------------------------------------------------------- */
-.poster-surface{--paper:#f2efe6;--ink:#12100e;--signal:#ff4a12;
- --bg:var(--paper);--surface:var(--paper);--raised:#fff;--line:rgba(18,16,14,.3);--muted:rgba(18,16,14,.7);
- --text:var(--ink);--white:var(--ink);--accent:var(--ink);--accent-deep:var(--ink);--workspace:var(--paper);
- background:var(--paper);color:var(--ink);min-height:100vh}
+.poster-surface{--paper:#f2efe6;--ink:#12100e;--signal:#ff4a12;--bg:var(--paper);--surface:var(--paper);--raised:#fff;--line:rgba(18,16,14,.3);--muted:rgba(18,16,14,.7);--text:var(--ink);--white:var(--ink);--accent:var(--ink);--accent-deep:var(--ink);--workspace:var(--paper);background:var(--paper);color:var(--ink);min-height:100vh}
 
 /* Header */
 .poster-surface .public-header,.poster-surface .public-header.scrolled{background:var(--paper);border-bottom:2px solid var(--ink);height:64px}
@@ -264,37 +262,32 @@ a{color:inherit}
 .poster-surface .brand-mark{border-color:var(--ink);transform:none;width:17px;height:17px}
 .poster-surface .brand-mark span{border-color:var(--ink)}
 .poster-surface .brand-dot{color:var(--signal)}
-.poster-surface .desktop-nav{gap:30px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.12em}
-.poster-surface .desktop-nav a:not(.button){color:var(--ink);opacity:.62}
+.poster-surface .desktop-nav{gap:30px;font-weight:700}
+.poster-surface .desktop-nav a:not(.button){color:var(--ink);opacity:.62;font-size:14px;text-transform:uppercase;letter-spacing:.12em}
 .poster-surface .desktop-nav a:not(.button):hover{opacity:1}
 .poster-surface .header-actions .button{background:var(--signal);color:var(--ink);border:0;border-radius:0;min-height:36px;padding:0 14px;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
 .poster-surface .header-actions .button:hover{background:var(--ink);color:var(--paper)}
 .poster-surface .mobile-menu{color:var(--ink)}
 .poster-surface .mobile-nav{background:var(--paper);border-bottom:2px solid var(--ink);top:64px}
 .poster-surface .mobile-nav a{border-color:rgba(18,16,14,.3);color:var(--ink);font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
-.poster-surface .mobile-nav a:last-child{color:var(--ink)}
-
-/* Display type */
-.poster-surface .site-home{background:transparent}
-.poster-surface .site-home h1,.poster-surface .site-home h2,.poster-surface .footer-mega{font-family:'Archivo Black',sans-serif;font-weight:400;text-transform:uppercase}
 
 /* Hero: ruled headline across the rail, copy left, one orange block right. */
 .poster-surface .hero-block{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(250px,.55fr);grid-template-rows:auto auto auto;gap:0 56px;align-items:start;padding:26px 32px 56px;max-width:1280px;border-bottom:2px solid var(--ink);position:relative;isolation:isolate}
 .poster-surface .hero-index{grid-column:1/-1;display:flex;justify-content:space-between;gap:20px;border-bottom:1.5px solid var(--ink);padding-bottom:10px;margin-bottom:30px;font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--ink)}
-.poster-surface .hero-block h1{grid-column:1/-1;margin:0 0 36px;font-size:clamp(40px,7vw,104px);line-height:.85;letter-spacing:-.05em;color:var(--ink)}
+.poster-surface .hero-block h1{grid-column:1/-1;margin:0 0 36px;font-size:clamp(40px,7vw,104px);line-height:.85;letter-spacing:-.05em;color:var(--ink);font-family:'Archivo Black',sans-serif;font-weight:400;text-transform:uppercase}
 .poster-surface .hero-block h1 span{display:block;border-top:1.5px solid var(--ink);padding:.05em 0 .1em}
 .poster-surface .hero-block h1 span:first-child{border-top:0;padding-top:0}
 .poster-surface .hero-copy>p{max-width:42ch;margin:0;font-size:16px;line-height:1.55;color:var(--ink)}
 .poster-surface .hero-actions{display:flex;align-items:center;gap:22px;margin-top:24px;flex-wrap:wrap}
-.poster-surface .button-primary{min-height:48px;padding:0 20px;background:var(--ink);color:var(--paper);border:0;border-radius:0;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
-.poster-surface .button-primary:hover:not(:disabled){background:var(--signal);color:var(--ink)}
+.poster-surface .button-primary{min-height:48px;padding:0 20px;background:var(--signal);color:var(--ink);border:0;border-radius:0;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+.poster-surface .button-primary:hover:not(:disabled){background:var(--ink);color:var(--paper)}
 .poster-surface .quiet-link{color:var(--ink);border-bottom:1.5px solid var(--ink);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding-bottom:4px}
 .poster-surface .quiet-link:hover{color:var(--ink);opacity:.55}
 .poster-surface .hero-facts{grid-template-columns:1fr;gap:0;margin:32px 0 0;padding:0;border-top:1.5px solid var(--ink)}
 .poster-surface .hero-facts>div{display:grid;grid-template-columns:104px minmax(0,1fr);gap:18px;padding:9px 0;border-bottom:1px solid rgba(18,16,14,.3)}
 .poster-surface .hero-facts dt{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ink);padding-top:2px}
 .poster-surface .hero-facts dd{margin:0;font-size:13px;color:var(--muted)}
-.poster-surface .hero-frame{grid-column:2;grid-row:3 / span 2;align-self:start;margin:0;background:var(--signal);border:0;padding:12px;transform:rotate(-2.2deg);box-shadow:12px 14px 0 rgba(18,16,14,.14);color:var(--ink);display:flex;flex-direction:column}
+.poster-surface .hero-frame{margin:0;border:0;background:var(--signal);padding:12px;transform:rotate(-2.2deg);box-shadow:12px 14px 0 rgba(18,16,14,.14);color:var(--ink);display:flex;flex-direction:column}
 .poster-surface .hero-frame .frame-inner{flex:1;background:transparent;border:1.5px solid rgba(18,16,14,.55);aspect-ratio:4/5;min-height:0}
 .poster-surface .hero-frame .frame-ratio{color:var(--ink);font-family:'IBM Plex Mono',monospace}
 .poster-surface .hero-frame strong{color:var(--ink);font-family:'Archivo Black',sans-serif;text-transform:uppercase;letter-spacing:-.02em;font-size:21px;line-height:.95}
@@ -303,18 +296,25 @@ a{color:inherit}
 
 /* Bands */
 .poster-surface .band{padding:88px 32px;max-width:1280px;border-bottom:2px solid var(--ink)}
-.poster-surface .band h2{font-size:clamp(30px,3.5vw,50px);line-height:.94;letter-spacing:-.045em;color:var(--ink);max-width:24ch}
+.poster-surface .band h2{font-family:'Archivo Black',sans-serif;font-weight:400;text-transform:uppercase;font-size:clamp(30px,3.5vw,50px);line-height:.94;letter-spacing:-.045em;color:var(--ink);max-width:24ch}
 .poster-surface .band p{color:var(--ink);opacity:.82}
 .poster-surface .statement{display:block;padding-top:96px;padding-bottom:96px}
-.poster-surface .statement h2{font-size:clamp(32px,4.3vw,62px);line-height:.95;max-width:26ch;letter-spacing:-.045em}
+.poster-surface .statement h2{font-size:clamp(32px,4.3vw,62px);line-height:.95;max-width:26ch}
 .poster-surface .statement p{margin:26px 0 0;max-width:52ch;font-size:16px}
 .poster-surface .band-head{grid-template-columns:minmax(0,1fr) minmax(240px,.7fr);gap:40px;align-items:end;margin-bottom:36px}
+.poster-surface .band-title{margin-bottom:26px}
 .poster-surface .band.studio-band{background:var(--ink);max-width:none;padding-inline:max(32px,calc((100vw - 1216px)/2));color:var(--paper)}
 .poster-surface .band.studio-band h2{color:var(--paper)}
 .poster-surface .band.studio-band .band-head p{color:rgba(242,239,230,.75);opacity:1}
 .poster-surface .home-demo{--bg:#15120f;--surface:#1b1714;--raised:#241d19;--workspace:#15120f;--line:#3a302a;--muted:#b6a99b;--text:#f7f2e9;--white:#fff;--accent:#ff4a12;--accent-deep:#ff4a12;background:#15120f;border:1px solid rgba(242,239,230,.22);color:#f7f2e9}
-.poster-surface .band.production .band-head{margin-bottom:26px}
-.poster-surface .stage-list{border-top:2px solid var(--ink)}
+.poster-surface .home-demo h1,.poster-surface .home-demo h2,.poster-surface .home-demo h3{color:var(--text);text-transform:none;font-family:'Archivo',sans-serif;font-weight:600;letter-spacing:normal;line-height:1.2}
+.poster-surface .home-demo p,.poster-surface .home-demo .mini-label{color:var(--muted);opacity:1}
+.poster-surface .home-demo .button-primary{background:var(--signal);color:#12100e}
+.poster-surface .home-demo .button-primary:disabled{opacity:1;background:#2c2521;color:#b6a99b}
+.poster-surface .home-demo .button-secondary{border-color:var(--line);color:var(--text)}
+.poster-surface .home-demo .button-secondary:hover:not(:disabled){background:var(--raised);color:var(--text);border-color:var(--text)}
+.poster-surface .home-demo .brand,.poster-surface .home-demo .brand-dot,.poster-surface .home-demo .brand-mark,.poster-surface .home-demo .brand-mark span{color:var(--text);border-color:var(--line)}
+.poster-surface .stage-list{border-top:2px solid var(--ink);list-style:none;margin:0;padding:0}
 .poster-surface .stage-list li{grid-template-columns:clamp(62px,7vw,104px) minmax(0,1fr) 168px;gap:28px;align-items:baseline;padding:18px 0;border-bottom:1px solid rgba(18,16,14,.3)}
 .poster-surface .stage-num{font-family:'Archivo Black',sans-serif;font-size:clamp(24px,2.5vw,36px);letter-spacing:-.05em;line-height:.9;color:var(--ink);padding-top:0}
 .poster-surface .stage-list h3{font-size:19px;font-weight:700;color:var(--ink)}
@@ -335,25 +335,22 @@ a{color:inherit}
 .poster-surface .band.templates h2{color:var(--paper);font-size:clamp(34px,4.5vw,66px);max-width:20ch}
 .poster-surface .band.templates p{color:rgba(242,239,230,.75);opacity:1;margin:24px 0 26px;max-width:54ch}
 .poster-surface .band.templates .quiet-link{color:var(--signal);border-color:var(--signal)}
-.poster-surface .band.closing{background:var(--signal);display:block;border-bottom:0;max-width:none;padding:100px max(24px,calc((100vw - 1216px)/2)) 104px}
+.poster-surface .band.closing{background:var(--paper);border-top:2px solid var(--signal);border-bottom:0;display:block;max-width:none;padding:100px max(24px,calc((100vw - 1216px)/2)) 104px}
 .poster-surface .closing h2{font-size:clamp(40px,6.8vw,102px);line-height:.86;max-width:14ch;letter-spacing:-.05em;color:var(--ink)}
 .poster-surface .closing p{margin:26px 0 30px;max-width:44ch;font-size:16px;color:var(--ink);opacity:.85}
-.poster-surface .closing .button-primary{background:var(--ink);color:var(--paper)}
-.poster-surface .closing .button-primary:hover:not(:disabled){background:var(--paper);color:var(--ink)}
 
-/* Other public pages on the same paper. */
+/* Inner pages on the same paper */
+.poster-surface h1,.poster-surface h2,.poster-surface h3{font-family:'Archivo Black',sans-serif;font-weight:400;letter-spacing:-.02em}
 .poster-surface .page-intro h1{font-family:'Archivo Black',sans-serif;font-weight:400;text-transform:uppercase;font-size:clamp(32px,4.3vw,60px);line-height:.9;letter-spacing:-.045em;color:var(--ink);max-width:22ch}
 .poster-surface .page-intro>p{color:var(--ink);opacity:.82}
 .poster-surface .section-border{border-top:2px solid var(--ink)}
-.poster-surface .section-head h2{font-family:'Archivo Black',sans-serif;text-transform:uppercase;letter-spacing:-.045em;line-height:.92;color:var(--ink)}
+.poster-surface .section-head h2{font-family:'Archivo Black',sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:-.045em;line-height:.92;color:var(--ink)}
 .poster-surface .text-link{color:var(--ink);border-bottom:1px solid var(--ink);padding-bottom:2px}
 .poster-surface .tag{border:1px solid var(--ink);border-radius:0;color:var(--ink);font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
 .poster-surface .button-secondary{border:2px solid var(--ink);color:var(--ink);border-radius:0}
 .poster-surface .button-secondary:hover:not(:disabled){background:var(--ink);color:var(--paper);border-color:var(--ink)}
-.poster-surface .final-cta{background:var(--signal);border-top:0;padding:88px 0;color:var(--ink)}
-.poster-surface .final-cta h2{font-family:'Archivo Black',sans-serif;text-transform:uppercase;letter-spacing:-.05em;line-height:.9;font-size:clamp(30px,3.9vw,52px);color:var(--ink);max-width:20ch}
-.poster-surface .final-cta .button-primary{background:var(--ink);color:var(--paper)}
-.poster-surface .final-cta .button-primary:hover:not(:disabled){background:var(--paper);color:var(--ink)}
+.poster-surface .final-cta{background:var(--paper);border-top:2px solid var(--signal);padding:88px 0;color:var(--ink)}
+.poster-surface .final-cta h2{font-family:'Archivo Black',sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:-.05em;line-height:.9;font-size:clamp(30px,3.9vw,52px);color:var(--ink);max-width:20ch}
 .poster-surface .feature-empty{background:transparent;border:1.5px solid var(--ink)}
 .poster-surface .product-feature,.poster-surface .journey-row{border-bottom:1px solid rgba(18,16,14,.35)}
 .poster-surface .plan{border:1.5px solid var(--ink);background:transparent}
@@ -370,41 +367,29 @@ a{color:inherit}
 .poster-surface .auth-form input:focus{border-color:var(--ink)}
 .poster-surface .auth-form .button{border-radius:0}
 .poster-surface .back-link{color:var(--ink);opacity:.7}
+.poster-surface .auth-page h1{font-family:'Archivo Black',sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:-.045em;line-height:.9}
 .poster-surface .error-box{border:2px solid var(--ink);color:var(--ink);background:transparent}
 .poster-surface .mini-label{color:var(--ink);opacity:.66}
 .poster-surface .studio-visual{background:var(--ink);border:0;color:var(--paper);--bg:#15120f;--surface:#1b1714;--line:rgba(242,239,230,.22);--text:#f7f2e9;--white:#fff;--muted:#bcae9f;--accent:var(--signal)}
 
-/* Footer: ink, with the year in the accent. */
-.poster-surface .footer{background:var(--ink);border-top:0;color:var(--paper);padding:52px 0 20px;overflow:hidden}
-.poster-surface .footer .brand{color:var(--paper)}
-.poster-surface .footer .brand-mark{border-color:var(--paper)}
-.poster-surface .footer .brand-mark span{border-color:var(--paper)}
+/* Footer: ink, with the year as the orange mark */
+.poster-surface .footer{background:var(--ink);border-top:0;color:var(--paper);padding:52px 0 20px;overflow:hidden;position:relative;isolation:isolate}
+.poster-surface .footer .brand,.poster-surface .footer .brand-mark,.poster-surface .footer .brand-mark span{color:var(--paper);border-color:var(--paper)}
 .poster-surface .footer .brand-dot{color:var(--signal)}
 .poster-surface .footer-top p{color:rgba(242,239,230,.72)}
 .poster-surface .footer-links a,.poster-surface .footer-links span{color:rgba(242,239,230,.8)}
 .poster-surface .footer-links a:hover{color:var(--paper)}
-.poster-surface .footer-mega{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;row-gap:4px;margin-top:44px;padding-top:24px;border-top:1px solid rgba(242,239,230,.28);color:var(--paper);line-height:.78;letter-spacing:-.055em}
+.poster-surface .footer-mega{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;row-gap:4px;margin-top:44px;padding-top:24px;border-top:1px solid rgba(242,239,230,.28);color:var(--paper);line-height:.78;letter-spacing:-.055em;font-family:'Archivo Black',sans-serif;font-weight:400;text-transform:uppercase}
 .poster-surface .footer-mega span:first-child{font-size:clamp(34px,10.2vw,138px)}
 .poster-surface .footer-mega span:last-child{font-size:clamp(28px,7.4vw,102px);color:var(--signal);margin-left:auto}
 .poster-surface .footer-bottom{border-top:1px solid rgba(242,239,230,.28);color:rgba(242,239,230,.66);padding-top:14px;margin-top:14px;font-family:'Archivo',sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.12em}
 
-/* Printed-paper grain, behind the type, on the loudest fields only. */
+/* Printed-paper grain, behind the type, on the loudest fields */
 .poster-surface .hero-block::after,.poster-surface .statement::after,.poster-surface .closing::after,.poster-surface .footer::after{content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;opacity:.22;mix-blend-mode:multiply;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.4'/%3E%3C/svg%3E")}
-.poster-surface .statement,.poster-surface .closing,.poster-surface .footer{position:relative;isolation:isolate}
-
-/* The live demo keeps its own dark ink, never the paper. */
-.poster-surface .home-demo h1,.poster-surface .home-demo h2,.poster-surface .home-demo h3{color:var(--text);text-transform:none;font-family:'Archivo',sans-serif;font-weight:600;letter-spacing:normal;line-height:1.2}
-.poster-surface .home-demo p{color:var(--muted);opacity:1}
-.poster-surface .home-demo .mini-label{color:var(--muted);opacity:1}
-.poster-surface .home-demo .button-primary{background:var(--signal);color:#12100e}
-.poster-surface .home-demo .button-primary:disabled{opacity:1;background:#2c2521;color:#b6a99b}
-.poster-surface .home-demo .button-secondary{border-color:var(--line);color:var(--text)}
-.poster-surface .home-demo .button-secondary:hover:not(:disabled){background:var(--raised);color:var(--text);border-color:var(--text)}
-.poster-surface .home-demo .brand,.poster-surface .home-demo .brand-dot,.poster-surface .home-demo .brand-mark,.poster-surface .home-demo .brand-mark span{color:var(--text);border-color:var(--line)}
+.poster-surface .statement,.poster-surface .closing{position:relative;isolation:isolate}
 
 @media(max-width:1024px){
  .poster-surface .hero-block{grid-template-columns:1fr;gap:30px;padding:22px 24px 48px}
- .poster-surface .hero-block h1,.poster-surface .hero-copy,.poster-surface .hero-frame{grid-row:auto;grid-column:1}
  .poster-surface .hero-frame{max-width:320px;margin-top:4px}
  .poster-surface .band{padding:64px 24px}
  .poster-surface .band.studio-band,.poster-surface .band.templates{padding-inline:24px}
@@ -425,16 +410,8 @@ a{color:inherit}
  .poster-surface .footer-mega{flex-direction:column;align-items:flex-start;gap:4px}
  .poster-surface .footer-mega span:last-child{margin-left:0}
  .poster-surface .band p{font-size:15px}
+ .poster-surface .band-head{grid-template-columns:1fr;gap:18px}
+ .poster-surface .home-demo{max-height:540px;overflow:auto}
+ .poster-surface .studio-visual .visual-workspace{grid-template-columns:1fr;height:300px}
+ .poster-surface .studio-visual .visual-sidebar,.poster-surface .studio-visual .visual-properties{display:none}
 }
-.poster-surface .brand-dot{color:#e5450e}
-/* Orange stays a mark: buttons and rules, not full-bleed fields. */
-.poster-surface .button-primary{background:var(--signal);color:var(--ink)}
-.poster-surface .button-primary:hover:not(:disabled){background:var(--ink);color:var(--paper)}
-.poster-surface .band.closing{background:var(--paper);border-top:2px solid var(--signal)}
-.poster-surface .closing h2{color:var(--ink)}
-.poster-surface .final-cta{background:var(--paper);border-top:2px solid var(--signal)}
-.poster-surface .final-cta h2{color:var(--ink)}
-.poster-surface .final-cta .button-primary{background:var(--signal);color:var(--ink)}
-.poster-surface .final-cta .button-primary:hover:not(:disabled){background:var(--ink);color:var(--paper)}
-.poster-surface .closing .button-primary{background:var(--signal);color:var(--ink)}
-.poster-surface .closing .button-primary:hover:not(:disabled){background:var(--ink);color:var(--paper)}

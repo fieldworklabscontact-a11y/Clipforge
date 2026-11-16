@@ -84,7 +84,7 @@ function Home() {
   <div className="home-demo"><Studio projects={[]} refresh={async()=>{}} demo/></div>
  </section>
  <section className="band production">
-  <div className="band-head"><h2>Four stages, and only one of them is the edit.</h2></div>
+  <h2 className="band-title">Four stages, and only one of them is the edit.</h2>
   <ol className="stage-list">{stages.map(([n,title,body,state])=><li key={n}><span className="stage-num">{n}</span><div><h3>{title}</h3><p>{body}</p></div><span className="stage-state">{state}</span></li>)}</ol>
   <Link className="quiet-link" to="/how-it-works">Read the full process</Link>
  </section>
