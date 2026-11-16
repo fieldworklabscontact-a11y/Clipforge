@@ -77,7 +77,7 @@ a{color:inherit}
 .frame-inner strong{font-size:15px;color:var(--text);font-weight:600}
 .frame-inner small{font-size:12px;color:var(--muted);max-width:22ch}
 .hero-frame figcaption{margin-top:12px;font-size:12px;color:var(--muted)}
-.band{padding:80px 32px;border-bottom:1px solid var(--line);max-width:1280px;margin:0 auto}
+.band{padding:64px 32px;border-bottom:1px solid var(--line);max-width:1280px;margin:0 auto}
 .band-head{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,.8fr);gap:48px;align-items:end;margin-bottom:40px}
 .band-head p{margin:0}
 .statement{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(240px,.6fr);gap:56px;align-items:end}
@@ -218,3 +218,31 @@ a{color:inherit}
 
 /* Mono is reserved for timecodes; sequence numbers are text, not data. */
 .feature-number,.journey-number,.stage-num,.plan-num{font-family:'Archivo','Helvetica Neue',Arial,sans-serif;font-weight:600;letter-spacing:0}
+
+/* Section rhythm: the homepage does not use one padding value for every band. */
+.statement{padding-top:104px;padding-bottom:92px}
+.studio-band{padding-top:72px;padding-bottom:100px}
+.production{padding-top:52px;padding-bottom:88px}
+.campaigns{padding-top:96px;padding-bottom:76px}
+.templates{padding-top:44px;padding-bottom:104px}
+.closing{padding-top:88px;padding-bottom:120px}
+@media(max-width:1024px){
+  .statement{padding-top:72px;padding-bottom:64px}
+  .studio-band{padding-top:48px;padding-bottom:64px}
+  .production{padding-top:36px;padding-bottom:60px}
+  .campaigns{padding-top:64px;padding-bottom:52px}
+  .templates{padding-top:32px;padding-bottom:68px}
+  .closing{padding-top:60px;padding-bottom:80px}
+}
+
+/* Orange fills take ink text, never the light body text colour. */
+.ed-submit,.editor .button-primary,.ed-setup .button-primary{color:#120d0a}
+
+/* The old header layer hard-coded ink text on a cream bar; these override it by specificity. */
+.public-header,.public-header.scrolled{color:var(--text)}
+.public-header .brand{color:var(--white)}
+.public-header .desktop-nav a:not(.button){color:var(--muted)}
+.public-header .desktop-nav a:not(.button):hover,.public-header .desktop-nav a.active{color:var(--white)}
+.public-header .mobile-menu{color:var(--text)}
+.public-header .header-actions .button{background:var(--accent);color:#120d0a;border-color:var(--accent)}
+.public-header .header-actions .button:hover{background:var(--white);color:#120d0a}
