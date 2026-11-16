@@ -28,14 +28,28 @@ export function createApp({ store, staticDir = null, mountApi = null }) {
       if (origin) {
         try {
           const parsed = new URL(origin);
-          if (!['http:', 'https:'].includes(parsed.protocol) || parsed.host !== req.get('host')) return res.status(403).json({ error: 'Request origin is not allowed.' });
+          const hostOf = value => String(value || '').split(',')[0].trim().toLowerCase().replace(/:(80|443)$/, '');
+          // Proxies (Netlify functions, deploy previews, custom domains) rewrite Host,
+          // so accept the forwarded host too instead of rejecting every mutation.
+          const hosts = [req.get('host'), req.get('x-forwarded-host')].map(hostOf).filter(Boolean);
+          if (!['http:', 'https:'].includes(parsed.protocol) || !hosts.includes(hostOf(parsed.host))) return res.status(403).json({ error: 'Request origin is not allowed.' });
         } catch { return res.status(403).json({ error: 'Request origin is not allowed.' }); }
       }
     }
     next();
   });
 
-  const isSecureRequest = req => req.secure || String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim() === 'https';
+  /**
+   * `netlify dev` proxies http://localhost and still reports x-forwarded-proto: https, which
+   * makes us emit a Secure cookie the browser then drops over plain http. Treat loopback
+   * hosts as insecure regardless of the proxy's claim.
+   */
+  const isSecureRequest = req => {
+    const host = String(req.get('x-forwarded-host') || req.get('host') || '').split(',')[0].trim().toLowerCase().replace(/:(80|443)$/, '');
+    const bare = host.replace(/^\[/, '').replace(/\]$/, '').split(':')[0];
+    if (bare === 'localhost' || bare === '127.0.0.1' || bare === '::1') return false;
+    return req.secure || String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim() === 'https';
+  };
 
   /**
    * A hosted preview runs the app inside an iframe, which is a third-party context:
