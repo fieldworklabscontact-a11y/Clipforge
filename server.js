@@ -32,10 +32,24 @@ function currentUser(req) {
   if (!raw) return null;
   return db.prepare('SELECT users.id, users.name, users.email, users.theme FROM sessions JOIN users ON users.id=sessions.user_id WHERE sessions.token=? AND sessions.expires>?').get(hash(raw), Date.now());
 }
-function setSession(res, userId) {
+const isSecureRequest = req => req.secure || String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim() === 'https';
+
+/**
+ * A hosted preview runs the app inside an iframe, which is a third-party context:
+ * a SameSite=Strict cookie is stored but never sent there, so every API call
+ * answers "Please log in to continue." over HTTPS we therefore issue
+ * SameSite=None; Secure, and keep Strict for plain http development.
+ */
+function sessionCookie(req, token) {
+  const https = isSecureRequest(req);
+  const attributes = https ? 'SameSite=None; Secure' : 'SameSite=Strict';
+  const value = token ? `=${token}; Max-Age=604800` : '=; Max-Age=0';
+  return `clipforge_session${value}; HttpOnly; ${attributes}; Path=/`;
+}
+function setSession(req, res, userId) {
   const token = randomBytes(32).toString('hex');
   db.prepare('INSERT INTO sessions VALUES (?, ?, ?)').run(hash(token), userId, Date.now() + 7 * 86400000);
-  res.setHeader('Set-Cookie', `clipforge_session=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=604800${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`);
+  res.setHeader('Set-Cookie', sessionCookie(req, token));
 }
 function requireUser(req, res, next) { req.user = currentUser(req); if (!req.user) return res.status(401).json({ error: 'Please log in to continue.' }); next(); }
 app.get('/api/session', (req, res) => res.json({ user: currentUser(req) }));
@@ -45,16 +59,16 @@ app.post('/api/signup', (req, res) => {
   const salt = randomBytes(16).toString('hex'), id = randomBytes(16).toString('hex');
   try { db.prepare('INSERT INTO users (id,name,email,salt,password) VALUES (?,?,?,?,?)').run(id, name.trim(), email.trim().toLowerCase(), salt, scryptSync(password, salt, 64).toString('hex')); }
   catch (error) { if (String(error.message).includes('UNIQUE')) return res.status(409).json({ error: 'An account with that email already exists.' }); throw error; }
-  setSession(res, id); res.status(201).json({ user: { id, name: name.trim(), email: email.trim().toLowerCase(), theme: 'dark' } });
+  setSession(req, res, id); res.status(201).json({ user: { id, name: name.trim(), email: email.trim().toLowerCase(), theme: 'dark' } });
 });
 app.post('/api/login', (req, res) => {
   const { email, password } = req.body || {};
   if (typeof email !== 'string' || typeof password !== 'string' || password.length > 256) return res.status(400).json({ error: 'Enter your email and password.' });
   const user = db.prepare('SELECT * FROM users WHERE email=?').get(email.trim().toLowerCase());
   if (!user || !timingSafeEqual(Buffer.from(user.password, 'hex'), scryptSync(password, user.salt, 64))) return res.status(401).json({ error: 'Email or password is incorrect.' });
-  setSession(res, user.id); res.json({ user: { id: user.id, name: user.name, email: user.email, theme: user.theme } });
+  setSession(req, res, user.id); res.json({ user: { id: user.id, name: user.name, email: user.email, theme: user.theme } });
 });
-app.post('/api/logout', (req, res) => { const raw = req.headers.cookie?.split(';').map(s => s.trim()).find(s => s.startsWith('clipforge_session='))?.slice('clipforge_session='.length); if (raw) db.prepare('DELETE FROM sessions WHERE token=?').run(hash(raw)); res.setHeader('Set-Cookie', 'clipforge_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0'); res.json({ ok: true }); });
+app.post('/api/logout', (req, res) => { const raw = req.headers.cookie?.split(';').map(s => s.trim()).find(s => s.startsWith('clipforge_session='))?.slice('clipforge_session='.length); if (raw) db.prepare('DELETE FROM sessions WHERE token=?').run(hash(raw)); res.setHeader('Set-Cookie', sessionCookie(req, null)); res.json({ ok: true }); });
 app.patch('/api/settings', requireUser, (req, res) => { const { theme } = req.body || {}; if (!['dark','light','system'].includes(theme)) return res.status(400).json({ error: 'Choose a valid theme.' }); db.prepare('UPDATE users SET theme=? WHERE id=?').run(theme, req.user.id); res.json({ user: { ...req.user, theme } }); });
 app.get('/api/projects', requireUser, (req, res) => res.json({ projects: db.prepare('SELECT id,name,data,updated FROM projects WHERE user_id=? ORDER BY updated DESC').all(req.user.id).map(p => ({ ...p, data: JSON.parse(p.data) })) }));
 app.post('/api/projects', requireUser, (req, res) => { const name = typeof req.body?.name === 'string' ? req.body.name.trim().slice(0, 100) : ''; const data = req.body?.data ?? {}; if (!name) return res.status(400).json({ error: 'Enter a project name.' }); if (!data || typeof data !== 'object' || Array.isArray(data)) return res.status(400).json({ error: 'Project data must be an object.' }); const project = { id: randomBytes(16).toString('hex'), name, data, updated: new Date().toISOString() }; db.prepare('INSERT INTO projects VALUES (?,?,?,?,?)').run(project.id, req.user.id, project.name, JSON.stringify(data), project.updated); res.status(201).json({ project }); });

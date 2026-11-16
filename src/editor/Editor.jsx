@@ -77,6 +77,8 @@ export default function Editor({ user, selected, refresh, api }) {
   const [tab,setTab]=useState('package'); const [bandOpen,setBandOpen]=useState(false); const [scope,setScope]=useState('timeline');
   const [zipBusy,setZipBusy]=useState(false); const [zipProgress,setZipProgress]=useState(0); const [zipBytes,setZipBytes]=useState(0); const [zipError,setZipError]=useState('');
   const [jobs,setJobs]=useState([]);
+  const [inspectorTab,setInspectorTab]=useState('clip');
+  const [timelineHeight,setTimelineHeight]=useState(300);
   const fileInput=useRef(null); const relinkInput=useRef(null); const relinkId=useRef(null); const player=useRef(null);
   const projectRef=useRef(null); const urlsRef=useRef({}); const alive=useRef(true);
   const navigateAllowed=useRef(false); const playheadRef=useRef(0);
@@ -115,7 +117,7 @@ export default function Editor({ user, selected, refresh, api }) {
   function undo(){if(!history.past.length)return;const previous=history.past.at(-1);setHistory({past:history.past.slice(0,-1),future:[projectRef.current,...history.future]});recordChange(previous);}
   function redo(){if(!history.future.length)return;const next=history.future[0];setHistory({past:[...history.past,projectRef.current],future:history.future.slice(1)});recordChange(next);}
 
-  useEffect(()=>{function handle(e){if(recovery)return;if(e.target instanceof HTMLElement && (e.target.isContentEditable||['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)))return;if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo();}else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();save();}else if(e.key===' '){e.preventDefault();setPlaying(x=>!x);}else if(e.key.toLowerCase()==='s'&&selectedClip){e.preventDefault();split();}else if(e.key==='Delete'&&selectedClip){update(removeClip(projectRef.current,selectedClip));setSelectedClip(null);}}window.addEventListener('keydown',handle);return()=>window.removeEventListener('keydown',handle);});
+  useEffect(()=>{function handle(e){if(recovery)return;if(e.target instanceof HTMLElement && (e.target.isContentEditable||['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)))return;if(e.key==='Escape'){if(bandOpen)setBandOpen(false);else if(dock)setDock(null);else setSelectedClip(null);return;}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo();}else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();save();}else if(e.key===' '){e.preventDefault();setPlaying(x=>!x);}else if(e.key.toLowerCase()==='s'&&selectedClip){e.preventDefault();split();}else if(e.key==='Delete'&&selectedClip){update(removeClip(projectRef.current,selectedClip));setSelectedClip(null);}}window.addEventListener('keydown',handle);return()=>window.removeEventListener('keydown',handle);});
 
   const clip=project&&activeClip(project,playhead); const chosen=project?.clips.find(c=>c.id===selectedClip); const length=project?endFrame(project):0;
   const caption=project?.captions.find(c=>playhead>=c.start&&playhead<c.start+c.duration);
@@ -129,6 +131,8 @@ export default function Editor({ user, selected, refresh, api }) {
   function seek(frame){const f=clampFrame(project,frame);playheadRef.current=f;setPlayhead(f);const target=activeClip(project,f);if(player.current&&target?.id===clip?.id){try{const desired=sourceTime(target,f,project.settings.fps);if(Math.abs(player.current.currentTime-desired)>0.005){setMediaReady(false);player.current.currentTime=desired;}}catch{setPlaying(false);setError('Seeking failed. The project is unchanged.');}}}
   function seekAt(clientX,element){const rect=element.getBoundingClientRect();seek((clientX-rect.left)/framePx);}
   function beginScrub(event){const element=event.currentTarget;const move=ev=>seekAt(ev.clientX,element);move(event);const up=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);};window.addEventListener('pointermove',move);window.addEventListener('pointerup',up);}
+  function resizeTimelineBy(delta){setTimelineHeight(current=>Math.max(180,Math.min(Math.round(window.innerHeight*0.62),current+delta)));}
+  function beginTimelineResize(event){if(event.button)return;event.preventDefault();const startY=event.clientY;const startHeight=timelineHeight;const move=ev=>{const next=Math.max(180,Math.min(window.innerHeight*0.62,startHeight+(startY-ev.clientY)));setTimelineHeight(Math.round(next));};const up=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);};window.addEventListener('pointermove',move);window.addEventListener('pointerup',up,{once:true});}
   function beginTrim(event,sourceClip,edge){if(event.button)return;event.preventDefault();event.stopPropagation();const asset=project.assets.find(a=>a.id===sourceClip.assetId);const startX=event.clientX;const origin={...sourceClip};const previousEnd=Math.max(0,...project.clips.filter(c=>c.id!==origin.id&&c.start<origin.start).map(c=>c.start+c.duration));const nextStart=Math.min(Infinity,...project.clips.filter(c=>c.id!==origin.id&&c.start>=origin.start+origin.duration).map(c=>c.start));let preview=origin;const move=ev=>{const delta=Math.round((ev.clientX-startX)/framePx);if(edge==='left'){const start=Math.max(previousEnd,Math.min(origin.start+delta,origin.start+origin.duration-1));preview={...origin,start,sourceIn:origin.sourceIn+(start-origin.start),duration:origin.duration-(start-origin.start)};}else{const limit=Math.min(asset?asset.frames-origin.sourceIn:origin.duration+delta,nextStart-origin.start);const duration=Math.max(1,Math.min(origin.duration+delta,limit));preview={...origin,duration};}setTrim(preview);};const up=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);setTrim(null);if(preview.start===origin.start&&preview.duration===origin.duration)return;try{update(changeClip(projectRef.current,origin.id,{start:preview.start,sourceIn:preview.sourceIn,duration:preview.duration}));}catch(e){setError(e.message);}};window.addEventListener('pointermove',move);window.addEventListener('pointerup',up,{once:true});}
 
   const description=useMemo(()=>project?describePackage(project,{name,scope,missing}):null,[project,name,scope,missing]);
@@ -230,16 +234,20 @@ export default function Editor({ user, selected, refresh, api }) {
 
       <aside className="ed-inspector">
         <PanelHead index="03" label="INSPECTOR" meta={chosen?'CLIP':'PROJECT'}/>
-        {chosen?<>
+        <div className="ed-insp-tabs" role="tablist" aria-label="Inspector">
+          {['clip','captions','project'].map(name=><button key={name} role="tab" aria-selected={inspectorTab===name} className={inspectorTab===name?'is-active':''} onClick={()=>setInspectorTab(name)}>{name.toUpperCase()}</button>)}
+        </div>
+        <div className="ed-insp-body">
+        {inspectorTab==='clip'&&(chosen?<>
           <Kicker right={`${chosen.duration} FRAMES`}>TIMING</Kicker>
           <Stepper label="Timeline start" value={chosen.start} max={Math.max(0,length-1)} onChange={value=>applyPatch({start:value})}/>
           <Stepper label="Source in" value={chosen.sourceIn} max={Math.max(0,(project.assets.find(a=>a.id===chosen.assetId)?.frames||1)-chosen.duration)} onChange={value=>applyPatch({sourceIn:value})}/>
           <Stepper label="Duration" value={chosen.duration} min={1} max={Math.max(1,(project.assets.find(a=>a.id===chosen.assetId)?.frames||1)-chosen.sourceIn)} onChange={value=>applyPatch({duration:value})}/>
           <div className="ed-row-actions"><button className="ed-btn" onClick={split}>SPLIT AT PLAYHEAD</button><button className="ed-btn" onClick={()=>{update(removeClip(projectRef.current,selectedClip));setSelectedClip(null);}}>DELETE CLIP</button></div>
           <p className="ed-note">Clips cannot overlap. Drag a clip edge on the timeline to trim; the end frame is clamped to the source.</p>
-        </>:<p className="ed-note">Select a clip on the timeline to edit its start, source in or duration.</p>}
+        </>:<p className="ed-note">Select a clip on the timeline to edit its start, source in or duration.</p>)}
 
-        <div className="ed-divider"/>
+        {inspectorTab==='captions'&&<>
         <Kicker right={`${project.captions.length} LINES`}>CAPTIONS</Kicker>
         <label className="ed-field ed-field-stack"><span>Caption text</span><input className="ed-input" value={captionText} maxLength={300} onChange={e=>setCaptionText(e.target.value)} placeholder="Add text at the playhead"/></label>
         <button className="ed-btn ed-btn-wide" disabled={!captionText.trim()} onClick={()=>{update({...projectRef.current,captions:[...projectRef.current.captions,{id:id(),text:captionText.trim(),start:playhead,duration:Math.round(3*project.settings.fps)}]});setCaptionText('');}}>ADD 3-SECOND CAPTION</button>
@@ -254,17 +262,24 @@ export default function Editor({ user, selected, refresh, api }) {
             </div>
           </div>)}
         </div>
+        </>}
 
-        <div className="ed-divider"/>
-        <Kicker>PROJECT</Kicker>
+        {inspectorTab==='project'&&<>
         <div className="ed-readout"><span>FORMAT</span><strong>{project.settings.width} × {project.settings.height}</strong></div>
         <div className="ed-readout"><span>FRAME RATE</span><strong>{project.settings.fps} FPS</strong></div>
         <div className="ed-readout"><span>AUDIO</span><strong>{project.settings.audioSampleRate/1000} KHZ</strong></div>
         <div className="ed-readout"><span>ASSETS</span><strong>{project.assets.length} / {project.clips.length} CLIPS</strong></div>
+        </>}
+        </div>
       </aside>
     </div>
 
-    <section className="ed-timeline">
+    <div className="ed-timeline-resizer" role="separator" tabIndex={0} aria-orientation="horizontal" aria-label="Resize timeline" aria-valuemin={180} aria-valuemax={Math.round(window.innerHeight*0.62)} aria-valuenow={Math.round(timelineHeight)} title="Drag to resize the timeline, or use ↑ ↓" onPointerDown={beginTimelineResize} onKeyDown={event=>{
+      if(event.key==='ArrowUp'||event.key==='ArrowDown'){event.preventDefault();resizeTimelineBy((event.key==='ArrowUp'?1:-1)*(event.shiftKey?48:16));}
+      else if(event.key==='Home'){event.preventDefault();setTimelineHeight(180);}
+      else if(event.key==='End'){event.preventDefault();setTimelineHeight(Math.round(window.innerHeight*0.62));}
+    }}/>
+    <section className="ed-timeline" style={{height:timelineHeight}}>
       <div className="ed-tl-head">
         <strong>04 / TIMELINE</strong>
         <span>{project.clips.length} CLIPS / {frameTime(length,project.settings.fps)}</span>
@@ -300,7 +315,9 @@ export default function Editor({ user, selected, refresh, api }) {
       </div>
     </section>
 
-    <section className={`ed-band${bandOpen?'':' is-collapsed'}`}>
+    {bandOpen&&<>
+    <div className="ed-drawer-scrim" onClick={()=>setBandOpen(false)}/>
+    <section className="ed-band ed-drawer">
       <div className="ed-band-head">
         <div className="ed-tabs">
           <button className={`ed-tab${tab==='package'?' is-active':''}`} onClick={()=>{setTab('package');setBandOpen(true);}}>05 / STREAM-TO-ZIP</button>
@@ -356,5 +373,6 @@ export default function Editor({ user, selected, refresh, api }) {
         </div>
       </>)}
     </section>
+    </>}
   </div>;
 }
