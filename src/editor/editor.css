@@ -338,3 +338,20 @@
   .ed-band.ed-drawer { width: 100vw; }
   .ed-timeline { min-height: 160px; }
 }
+
+/* ── Phase 2: direct manipulation on the timeline ─────────────────────── */
+.ed-clip { cursor: grab; touch-action: none; user-select: none; }
+.ed-clip.is-dragging { cursor: grabbing; z-index: 3; box-shadow: 0 0 0 2px var(--ed-signal); }
+.ed-cap-lane { height: 40px; border-top: 1px solid rgba(242, 240, 234, .14); }
+.ed-cap-lane .ed-lane-body { background: #0d0d0d; }
+.ed-cap-lane .ed-lane-empty { top: 10px; padding: 4px 8px; font-size: 8.5px; }
+.ed-cap { position: absolute; top: 8px; height: 24px; display: flex; align-items: center; padding: 0 7px; background: rgba(242, 240, 234, .13); border: 1px solid rgba(242, 240, 234, .45); color: var(--ed-paper); font: 500 9px var(--ed-mono); letter-spacing: .02em; white-space: nowrap; overflow: hidden; cursor: grab; touch-action: none; user-select: none; }
+.ed-cap span { overflow: hidden; text-overflow: ellipsis; }
+.ed-cap:hover, .ed-cap.is-dragging { background: var(--ed-signal); border-color: var(--ed-signal); color: var(--ed-ink); }
+.ed-snap { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--ed-signal); pointer-events: none; z-index: 4; }
+.ed-snap::before { content: ''; position: absolute; top: 0; left: -3px; width: 7px; height: 7px; background: var(--ed-signal); }
+.ed-edit-readout { margin-left: auto; color: var(--ed-signal); font: 600 9px var(--ed-mono); letter-spacing: .06em; white-space: nowrap; }
+.ed-zoom .ed-fit { width: auto; padding: 0 7px; font-size: 8.5px; letter-spacing: .05em; }
+.ed-tl-head > span.ed-edit-readout { color: var(--ed-signal); }
+.ed-tl-head > span.ed-edit-readout + .ed-zoom { margin-left: 12px; }
+@media (max-width: 820px) { .ed-cap-lane { height: 38px; } }

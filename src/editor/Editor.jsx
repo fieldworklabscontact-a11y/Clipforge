@@ -12,6 +12,7 @@ import './editor.css';
 
 const presets = { Vertical:[1080,1920], 'Full HD':[1920,1080], Square:[1080,1080], QHD:[2560,1440], UHD:[3840,2160], Custom:null };
 const id = () => crypto.randomUUID();
+const ZOOM_MIN = 1, ZOOM_MAX = 20, SNAP_PX = 9;
 const SAVE_STATE = { Saved:'ok', Saving:'busy', 'Unsaved changes':'dirty', 'Save failed':'bad' };
 
 function Kicker({ children, right }) {
@@ -79,6 +80,8 @@ export default function Editor({ user, selected, refresh, api }) {
   const [jobs,setJobs]=useState([]);
   const [inspectorTab,setInspectorTab]=useState('clip');
   const [timelineHeight,setTimelineHeight]=useState(300);
+  const [drag,setDrag]=useState(null); const [snapAt,setSnapAt]=useState(null);
+  const tlScroll=useRef(null);
   const fileInput=useRef(null); const relinkInput=useRef(null); const relinkId=useRef(null); const player=useRef(null);
   const projectRef=useRef(null); const urlsRef=useRef({}); const alive=useRef(true);
   const navigateAllowed=useRef(false); const playheadRef=useRef(0);
@@ -117,7 +120,7 @@ export default function Editor({ user, selected, refresh, api }) {
   function undo(){if(!history.past.length)return;const previous=history.past.at(-1);setHistory({past:history.past.slice(0,-1),future:[projectRef.current,...history.future]});recordChange(previous);}
   function redo(){if(!history.future.length)return;const next=history.future[0];setHistory({past:[...history.past,projectRef.current],future:history.future.slice(1)});recordChange(next);}
 
-  useEffect(()=>{function handle(e){if(recovery)return;if(e.target instanceof HTMLElement && (e.target.isContentEditable||['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)))return;if(e.key==='Escape'){if(bandOpen)setBandOpen(false);else if(dock)setDock(null);else setSelectedClip(null);return;}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo();}else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();save();}else if(e.key===' '){e.preventDefault();setPlaying(x=>!x);}else if(e.key.toLowerCase()==='s'&&selectedClip){e.preventDefault();split();}else if(e.key==='Delete'&&selectedClip){update(removeClip(projectRef.current,selectedClip));setSelectedClip(null);}}window.addEventListener('keydown',handle);return()=>window.removeEventListener('keydown',handle);});
+  useEffect(()=>{function handle(e){if(recovery)return;if(e.target instanceof HTMLElement && (e.target.isContentEditable||['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)))return;const key=e.key,lower=key.toLowerCase(),plain=!e.ctrlKey&&!e.metaKey&&!e.altKey;if(key==='Escape'){if(bandOpen)setBandOpen(false);else if(dock)setDock(null);else setSelectedClip(null);return;}if((e.ctrlKey||e.metaKey)&&(lower==='z'||lower==='s')){e.preventDefault();if(lower==='s')save();else if(e.shiftKey)redo();else undo();return;}if(plain&&(key==='ArrowLeft'||key==='ArrowRight')){e.preventDefault();const step=(key==='ArrowRight'?1:-1)*(e.shiftKey?Math.round(projectRef.current?.settings.fps||30):1);seek(playheadRef.current+step);return;}if(plain&&key==='Home'){e.preventDefault();seek(0);return;}if(plain&&key==='End'){e.preventDefault();seek(Math.max(0,endFrame(projectRef.current)-1));return;}if(plain&&(key==='+'||key==='='||key==='-'||key==='0')){e.preventDefault();if(key==='0')fitZoom();else zoomTo(zoom+(key==='-'?-1:1));return;}if(key===' '){e.preventDefault();setPlaying(x=>!x);return;}if(lower==='s'&&selectedClip){e.preventDefault();split();return;}if(key==='Delete'&&selectedClip){update(removeClip(projectRef.current,selectedClip));setSelectedClip(null);}}window.addEventListener('keydown',handle);return()=>window.removeEventListener('keydown',handle);});
 
   const clip=project&&activeClip(project,playhead); const chosen=project?.clips.find(c=>c.id===selectedClip); const length=project?endFrame(project):0;
   const caption=project?.captions.find(c=>playhead>=c.start&&playhead<c.start+c.duration);
@@ -128,12 +131,69 @@ export default function Editor({ user, selected, refresh, api }) {
 
   const fps=project?.settings.fps||30;
   const framePx=useMemo(()=>((zoom*10)/(fps||30)),[zoom,fps]);
+  useEffect(()=>{const el=tlScroll.current;if(!el)return;const x=playhead*framePx;const pad=90;if(x<el.scrollLeft+pad)el.scrollLeft=Math.max(0,x-pad);else if(x>el.scrollLeft+el.clientWidth-pad)el.scrollLeft=x-el.clientWidth+pad;},[playhead,framePx]);
   function seek(frame){const f=clampFrame(project,frame);playheadRef.current=f;setPlayhead(f);const target=activeClip(project,f);if(player.current&&target?.id===clip?.id){try{const desired=sourceTime(target,f,project.settings.fps);if(Math.abs(player.current.currentTime-desired)>0.005){setMediaReady(false);player.current.currentTime=desired;}}catch{setPlaying(false);setError('Seeking failed. The project is unchanged.');}}}
   function seekAt(clientX,element){const rect=element.getBoundingClientRect();seek((clientX-rect.left)/framePx);}
   function beginScrub(event){const element=event.currentTarget;const move=ev=>seekAt(ev.clientX,element);move(event);const up=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);};window.addEventListener('pointermove',move);window.addEventListener('pointerup',up);}
   function resizeTimelineBy(delta){setTimelineHeight(current=>Math.max(180,Math.min(Math.round(window.innerHeight*0.62),current+delta)));}
   function beginTimelineResize(event){if(event.button)return;event.preventDefault();const startY=event.clientY;const startHeight=timelineHeight;const move=ev=>{const next=Math.max(180,Math.min(window.innerHeight*0.62,startHeight+(startY-ev.clientY)));setTimelineHeight(Math.round(next));};const up=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);};window.addEventListener('pointermove',move);window.addEventListener('pointerup',up,{once:true});}
   function beginTrim(event,sourceClip,edge){if(event.button)return;event.preventDefault();event.stopPropagation();const asset=project.assets.find(a=>a.id===sourceClip.assetId);const startX=event.clientX;const origin={...sourceClip};const previousEnd=Math.max(0,...project.clips.filter(c=>c.id!==origin.id&&c.start<origin.start).map(c=>c.start+c.duration));const nextStart=Math.min(Infinity,...project.clips.filter(c=>c.id!==origin.id&&c.start>=origin.start+origin.duration).map(c=>c.start));let preview=origin;const move=ev=>{const delta=Math.round((ev.clientX-startX)/framePx);if(edge==='left'){const start=Math.max(previousEnd,Math.min(origin.start+delta,origin.start+origin.duration-1));preview={...origin,start,sourceIn:origin.sourceIn+(start-origin.start),duration:origin.duration-(start-origin.start)};}else{const limit=Math.min(asset?asset.frames-origin.sourceIn:origin.duration+delta,nextStart-origin.start);const duration=Math.max(1,Math.min(origin.duration+delta,limit));preview={...origin,duration};}setTrim(preview);};const up=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);setTrim(null);if(preview.start===origin.start&&preview.duration===origin.duration)return;try{update(changeClip(projectRef.current,origin.id,{start:preview.start,sourceIn:preview.sourceIn,duration:preview.duration}));}catch(e){setError(e.message);}};window.addEventListener('pointermove',move);window.addEventListener('pointerup',up,{once:true});}
+
+  const scrubIfEmpty=event=>{if(event.target===event.currentTarget)beginScrub(event);};
+  function beginTimelineDrag(event,item,kind){
+    if(event.button)return;
+    event.preventDefault();
+    const isClip=kind==='clip';
+    if(isClip)setSelectedClip(item.id);
+    else{setInspectorTab('captions');seek(item.start);}
+    const current=projectRef.current, origin={...item}, lengthF=endFrame(current);
+    const others=isClip?current.clips.filter(c=>c.id!==origin.id):current.clips;
+    const prevEnd=isClip?Math.max(0,...current.clips.filter(c=>c.id!==origin.id&&c.start<=origin.start).map(c=>c.start+c.duration)):0;
+    const later=isClip?current.clips.filter(c=>c.id!==origin.id&&c.start>=origin.start+origin.duration).map(c=>c.start):[];
+    const maxStart=isClip?(later.length?Math.min(...later)-origin.duration:lengthF):Math.max(0,lengthF-origin.duration);
+    const edges=[0,playheadRef.current];
+    for(const c of others)edges.push(c.start,c.start+c.duration);
+    for(const c of current.captions)if(c.id!==origin.id)edges.push(c.start,c.start+c.duration);
+    const startX=event.clientX, threshold=Math.max(1,Math.round(SNAP_PX/framePx));
+    let preview=origin, moved=false;
+    const move=ev=>{
+      if(Math.abs(ev.clientX-startX)>2)moved=true;
+      const raw=Math.max(prevEnd,Math.min(maxStart,origin.start+Math.round((ev.clientX-startX)/framePx)));
+      let best=null,bestDist=threshold+1;
+      for(const edge of edges){const d=Math.abs(edge-raw);if(d<bestDist){bestDist=d;best=edge;}}
+      const start=best===null?raw:Math.max(prevEnd,Math.min(maxStart,best));
+      preview={kind,id:origin.id,start,duration:origin.duration};
+      setDrag(preview);setSnapAt(best===null?null:start);
+    };
+    const finish=()=>{
+      window.removeEventListener('pointermove',move);
+      window.removeEventListener('pointerup',finish);
+      setDrag(null);setSnapAt(null);
+      if(!moved){seek(origin.start);return;}
+      if(preview.start===origin.start)return;
+      if(isClip){try{update(changeClip(projectRef.current,origin.id,{start:preview.start}));}catch(e){setError(e.message);}}
+      else update({...projectRef.current,captions:projectRef.current.captions.map(c=>c.id===origin.id?{...c,start:preview.start}:c)});
+    };
+    window.addEventListener('pointermove',move);
+    window.addEventListener('pointerup',finish,{once:true});
+  }
+  function zoomTo(next){
+    const current=projectRef.current;if(!current)return;
+    const clamped=Math.max(ZOOM_MIN,Math.min(ZOOM_MAX,next));
+    if(clamped===zoom)return;
+    const fpsNow=current.settings.fps,el=tlScroll.current,frame=playheadRef.current;
+    const offset=el?frame*((zoom*10)/fpsNow)-el.scrollLeft:null;
+    setZoom(clamped);
+    if(el&&offset!==null)requestAnimationFrame(()=>{el.scrollLeft=Math.max(0,frame*((clamped*10)/fpsNow)-offset);});
+  }
+  function fitZoom(){
+    const el=tlScroll.current,current=projectRef.current;
+    if(!el||!current)return;
+    const span=Math.max(1,endFrame(current))+3*current.settings.fps;
+    const fit=(Math.max(280,el.clientWidth-70)/span)*current.settings.fps/10;
+    setZoom(Math.max(ZOOM_MIN,Math.min(ZOOM_MAX,Math.round(fit*100)/100)));
+    el.scrollLeft=0;
+  }
 
   const description=useMemo(()=>project?describePackage(project,{name,scope,missing}):null,[project,name,scope,missing]);
   const jobCounts=useMemo(()=>({queued:jobs.filter(j=>j.state==='queued').length,running:jobs.filter(j=>j.state==='running').length,done:jobs.filter(j=>j.state==='done').length}),[jobs]);
@@ -283,9 +343,10 @@ export default function Editor({ user, selected, refresh, api }) {
       <div className="ed-tl-head">
         <strong>04 / TIMELINE</strong>
         <span>{project.clips.length} CLIPS / {frameTime(length,project.settings.fps)}</span>
-        <div className="ed-zoom"><button onClick={()=>setZoom(z=>Math.max(2,z-1))} aria-label="Zoom out">−</button><input type="range" min="2" max="20" value={zoom} onChange={e=>setZoom(Number(e.target.value))} aria-label="Timeline zoom"/><button onClick={()=>setZoom(z=>Math.min(20,z+1))} aria-label="Zoom in">+</button><em>{zoom}×</em></div>
+        {(trim||drag)&&<span className="ed-edit-readout">{drag?'MOVE':'TRIM'} {frameTime((drag||trim).start,project.settings.fps)} / {(drag||trim).duration}F</span>}
+        <div className="ed-zoom"><button onClick={()=>zoomTo(zoom-1)} aria-label="Zoom out">−</button><input type="range" min={ZOOM_MIN} max={ZOOM_MAX} step="0.1" value={zoom} onChange={e=>zoomTo(Number(e.target.value))} aria-label="Timeline zoom"/><button onClick={()=>zoomTo(zoom+1)} aria-label="Zoom in">+</button><em>{Number(zoom.toFixed(1))}×</em><button className="ed-fit" onClick={fitZoom} title="Fit the whole cut in view (0)">FIT</button></div>
       </div>
-      <div className="ed-tl-scroll">
+      <div className="ed-tl-scroll" ref={tlScroll}>
         <div className="ed-tl-content" style={{width:contentWidth}}>
           <div className="ed-ruler">
             <div className="ed-track-label ed-ruler-label">TIME</div>
@@ -296,11 +357,12 @@ export default function Editor({ user, selected, refresh, api }) {
           </div>
           <div className="ed-lane">
             <div className="ed-track-label">V1</div>
-            <div className="ed-lane-body" onPointerDown={e=>{if(e.target===e.currentTarget)beginScrub(e);}}>
+            <div className="ed-lane-body" onPointerDown={scrubIfEmpty}>
               {project.clips.map(item=>{
                 const asset=project.assets.find(a=>a.id===item.assetId);
-                const shown=trim&&trim.id===item.id?trim:item;
-                return <div key={item.id} className={`ed-clip${item.id===selectedClip?' is-selected':''}`} style={{left:shown.start*framePx,width:Math.max(2,shown.duration*framePx)}} role="button" tabIndex={0} aria-label={`${asset?.name||'Clip'} from frame ${item.start}, ${item.duration} frames`} onClick={()=>{setSelectedClip(item.id);seek(item.start);}} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();setSelectedClip(item.id);seek(item.start);}}}>
+                const dragging=drag?.kind==='clip'&&drag.id===item.id;
+                const shown=dragging?drag:trim&&trim.id===item.id?trim:item;
+                return <div key={item.id} className={`ed-clip${item.id===selectedClip?' is-selected':''}${dragging?' is-dragging':''}`} style={{left:shown.start*framePx,width:Math.max(2,shown.duration*framePx)}} role="button" tabIndex={0} title={`${asset?.name||'Clip'} — drag to move, edges to trim`} aria-label={`${asset?.name||'Clip'} from frame ${item.start}, ${item.duration} frames`} onPointerDown={e=>beginTimelineDrag(e,item,'clip')} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();setSelectedClip(item.id);seek(item.start);}else if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();e.stopPropagation();const delta=(e.key==='ArrowRight'?1:-1)*(e.shiftKey?project.settings.fps:1);try{update(changeClip(projectRef.current,item.id,{start:Math.max(0,item.start+delta)}));setSelectedClip(item.id);}catch(err){setError(err.message);}}}}>
                   <strong>{asset?.name||'Clip'}</strong>
                   <small>{frameTime(item.start,project.settings.fps)} / {item.duration}F</small>
                   <span className="ed-trim left" onPointerDown={e=>beginTrim(e,item,'left')} title="Trim start"/>
@@ -311,6 +373,19 @@ export default function Editor({ user, selected, refresh, api }) {
               <div className="ed-playhead" style={{left:playhead*framePx}}/>
             </div>
           </div>
+          <div className="ed-lane ed-cap-lane">
+            <div className="ed-track-label">T</div>
+            <div className="ed-lane-body" onPointerDown={scrubIfEmpty}>
+              {project.captions.map(item=>{
+                const dragging=drag?.kind==='caption'&&drag.id===item.id;
+                const shown=dragging?drag:item;
+                return <div key={item.id} className={`ed-cap${dragging?' is-dragging':''}`} style={{left:shown.start*framePx,width:Math.max(8,shown.duration*framePx)}} title={`${item.text} · ${frameTime(item.start,project.settings.fps)} + ${(item.duration/project.settings.fps).toFixed(1)}s — drag to move`} onPointerDown={e=>beginTimelineDrag(e,item,'caption')}><span>{item.text||'—'}</span></div>;
+              })}
+              {!project.captions.length&&<div className="ed-lane-empty">NO CAPTIONS YET — ADD ONE IN THE INSPECTOR</div>}
+              <div className="ed-playhead" style={{left:playhead*framePx}}/>
+            </div>
+          </div>
+          {snapAt!==null&&<div className="ed-snap" style={{left:snapAt*framePx}}/>}
         </div>
       </div>
     </section>
