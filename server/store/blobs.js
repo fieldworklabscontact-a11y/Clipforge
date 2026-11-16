@@ -72,7 +72,8 @@ export function createBlobStore(blobs) {
       return null;
     },
     async createUser({ id, name, email, salt, password }) {
-      if (await read(key.email(email))) {
+      // Cache first so a repeat from this instance is instant; the read covers other instances.
+      if (recall(email) || await read(key.email(email))) {
         const taken = new Error('An account with that email already exists.');
         taken.code = 'EMAIL_TAKEN';
         throw taken;
