@@ -28,11 +28,13 @@ export function createApp({ store, staticDir = null, mountApi = null }) {
       if (origin) {
         try {
           const parsed = new URL(origin);
-          const hostOf = value => String(value || '').split(',')[0].trim().toLowerCase().replace(/:(80|443)$/, '');
           // Proxies (Netlify functions, deploy previews, custom domains) rewrite Host,
-          // so accept the forwarded host too instead of rejecting every mutation.
-          const hosts = [req.get('host'), req.get('x-forwarded-host')].map(hostOf).filter(Boolean);
-          if (!['http:', 'https:'].includes(parsed.protocol) || !hosts.includes(hostOf(parsed.host))) return res.status(403).json({ error: 'Request origin is not allowed.' });
+          // so accept the forwarded host too. Any loopback spelling counts as the same
+          // origin: macOS proxies localhost as [::1] while the browser says localhost.
+          const hosts = [req.get('host'), req.get('x-forwarded-host')].map(hostName).filter(Boolean);
+          const originHost = hostName(parsed.host);
+          const sameHost = hosts.includes(originHost) || (isLoopback(originHost) && hosts.some(isLoopback));
+          if (!['http:', 'https:'].includes(parsed.protocol) || !sameHost) return res.status(403).json({ error: 'Request origin is not allowed.' });
         } catch { return res.status(403).json({ error: 'Request origin is not allowed.' }); }
       }
     }
@@ -44,10 +46,15 @@ export function createApp({ store, staticDir = null, mountApi = null }) {
    * makes us emit a Secure cookie the browser then drops over plain http. Treat loopback
    * hosts as insecure regardless of the proxy's claim.
    */
+  const hostName = value => {
+    const host = String(value || '').split(',')[0].trim().toLowerCase();
+    if (host.startsWith('[')) return host.slice(1, host.indexOf(']'));
+    return host.replace(/:\d+$/, '');
+  };
+  const isLoopback = host => host === 'localhost' || host === '127.0.0.1' || host === '::1';
   const isSecureRequest = req => {
-    const host = String(req.get('x-forwarded-host') || req.get('host') || '').split(',')[0].trim().toLowerCase().replace(/:(80|443)$/, '');
-    const bare = host.replace(/^\[/, '').replace(/\]$/, '').split(':')[0];
-    if (bare === 'localhost' || bare === '127.0.0.1' || bare === '::1') return false;
+    const host = hostName(req.get('x-forwarded-host') || req.get('host'));
+    if (isLoopback(host)) return false;
     return req.secure || String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim() === 'https';
   };
 
