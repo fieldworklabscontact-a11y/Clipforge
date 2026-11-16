@@ -4,6 +4,10 @@
  * read-compare-write in updateProject is best-effort rather than atomic: two tabs saving
  * at the exact same millisecond could both win. Acceptable for a preview; a real
  * deployment should move this to Postgres (Netlify DB) before trusting it with client work.
+ *
+ * Blobs can also serve a read from a replica that has not seen the write yet, so a login
+ * right after signup could miss the account. New users are therefore kept in a short-lived
+ * in-memory map and lookups retry briefly before reporting "no such user".
  */
 const key = {
   user: id => `users/${id}`,
@@ -12,11 +16,33 @@ const key = {
   project: (userId, id) => `projects/${userId}/${id}`,
 };
 
+const FRESH_USER_MS = 60_000;
+const RETRY_DELAYS = [200, 600];
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
 export function createBlobStore(blobs) {
   const read = async (name) => (await blobs.get(name, { type: 'json' })) ?? null;
 
+  // Bounded to a minute, and every write refreshes the entry, so a theme change is not masked for long.
+  const freshUsers = new Map();
+
+  function remember(user) {
+    freshUsers.set(user.email, { user, expires: Date.now() + FRESH_USER_MS });
+  }
+
+  function recall(email) {
+    const entry = freshUsers.get(email);
+    if (!entry) return null;
+    if (entry.expires <= Date.now()) {
+      freshUsers.delete(email);
+      return null;
+    }
+    return entry.user;
+  }
+
   async function writeUser(user) {
     await Promise.all([blobs.setJSON(key.user(user.id), user), blobs.setJSON(key.email(user.email), user)]);
+    remember(user);
   }
 
   return {
@@ -33,7 +59,17 @@ export function createBlobStore(blobs) {
       await blobs.delete(key.session(token));
     },
     async findUserByEmail(email) {
-      return read(key.email(email));
+      const cached = recall(email);
+      if (cached) return cached;
+      for (const delay of [0, ...RETRY_DELAYS]) {
+        if (delay) await sleep(delay);
+        const user = await read(key.email(email));
+        if (user) {
+          remember(user);
+          return user;
+        }
+      }
+      return null;
     },
     async createUser({ id, name, email, salt, password }) {
       if (await read(key.email(email))) {
@@ -65,7 +101,7 @@ export function createBlobStore(blobs) {
       if (expectedUpdated !== undefined && existing.updated !== expectedUpdated) return { ok: false, reason: 'conflict' };
       const updated = new Date(Math.max(Date.now(), Date.parse(existing.updated) + 1)).toISOString();
       const project = { id, userId, name, data, updated };
-      await blobs.setJSON(key.project(userId, id), project);
+      await blobs.setJSON(key.project(userId, project.id), project);
       return { ok: true, project: { id, name, data, updated } };
     },
     async deleteProject(id, userId) {
