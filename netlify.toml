@@ -1,0 +1,27 @@
+# Netlify configuration for the ClipForge preview.
+# The SPA is built with Vite; the API runs as a function in netlify/functions/api.js.
+# Local development keeps using `npm run dev` + `npm run dev:api` (Vite proxies /api to :3001).
+# To run the hosted shape locally: API_PROXY_TARGET=off npx netlify dev.
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+  functions = "netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+[functions]
+  node_bundler = "esbuild"
+
+# API first, so the SPA catch-all never swallows it.
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
